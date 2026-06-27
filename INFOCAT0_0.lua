@@ -27,10 +27,10 @@ local function PlayAnimeSound()
     Audio:Play()
 end
 
--- [[ СИСТЕМА КЛЮЧЕЙ (ПАНЕЛЬ АВТОРИЗАЦИИ) ]]
+-- [[ СИСТЕМА КЛЮЧЕЙ (ПАНЕЛЬ АВТОРИЗАЦИИ С НОВОЙ КНОПКОЙ) ]]
 local KeyFrame = Instance.new("Frame")
-KeyFrame.Size = UDim2.new(0, 260, 0, 140)
-KeyFrame.Position = UDim2.new(0.5, -130, 0.5, -70)
+KeyFrame.Size = UDim2.new(0, 260, 0, 180) -- Немного увеличили высоту для новой кнопки
+KeyFrame.Position = UDim2.new(0.5, -130, 0.5, -90)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 28)
 KeyFrame.Active = true
 KeyFrame.Draggable = true
@@ -63,8 +63,8 @@ local KIC = Instance.new("UICorner") KIC.CornerRadius = UDim.new(0, 6) KIC.Paren
 local KIS = Instance.new("UIStroke") KIS.Color = Color3.fromRGB(40, 35, 60); KIS.Parent = KeyInput
 
 local KeyBtn = Instance.new("TextButton")
-KeyBtn.Size = UDim2.new(0, 100, 0, 32)
-KeyBtn.Position = UDim2.new(0.5, -50, 0, 92)
+KeyBtn.Size = UDim2.new(0, 210, 0, 32)
+KeyBtn.Position = UDim2.new(0.5, -105, 0, 90)
 KeyBtn.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
 KeyBtn.Text = "Войти"
 KeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -73,9 +73,36 @@ KeyBtn.TextSize = 12
 KeyBtn.Parent = KeyFrame
 local KBC = Instance.new("UICorner") KBC.CornerRadius = UDim.new(0, 6) KBC.Parent = KeyBtn
 
+-- НОВАЯ КНОПКА: Копировать ключ
+local CopyKeyBtn = Instance.new("TextButton")
+CopyKeyBtn.Size = UDim2.new(0, 210, 0, 32)
+CopyKeyBtn.Position = UDim2.new(0.5, -105, 0, 132)
+CopyKeyBtn.BackgroundColor3 = Color3.fromRGB(28, 36, 43)
+CopyKeyBtn.Text = "🔑 Копировать ключ"
+CopyKeyBtn.TextColor3 = Color3.fromRGB(0, 240, 255)
+CopyKeyBtn.Font = Enum.Font.GothamBold
+CopyKeyBtn.TextSize = 11
+CopyKeyBtn.Parent = KeyFrame
+local CKBC = Instance.new("UICorner") CKBC.CornerRadius = UDim.new(0, 6) CKBC.Parent = CopyKeyBtn
+local CKBS = Instance.new("UIStroke") CKBS.Color = Color3.fromRGB(40, 35, 60); CKBS.Thickness = 1; CKBS.Parent = CopyKeyBtn
+
+-- Логика для копирования ссылки
+CopyKeyBtn.MouseButton1Click:Connect(function()
+    PlayAnimeSound()
+    setclipboard("https://go.linkify.ru/2ItD")
+    
+    local oldText = CopyKeyBtn.Text
+    CopyKeyBtn.Text = "Ссылка скопирована!"
+    CopyKeyBtn.TextColor3 = Color3.fromRGB(40, 255, 120)
+    
+    task.wait(2)
+    CopyKeyBtn.Text = oldText
+    CopyKeyBtn.TextColor3 = Color3.fromRGB(0, 240, 255)
+end)
+
 -- Функция запуска основного скрипта
 local function InitializeMainScript()
-    KeyFrame:Destroy() -- Удаляем панель ключа
+    KeyFrame:Destroy() -- Удаляем панель ключа полностью
     PlayAnimeSound()
 
     -- [[ Настройки ]]
@@ -119,9 +146,9 @@ local function InitializeMainScript()
         return true
     end
 
-    -- [[ Главный Интерфейс Меню (УМЕНЬШЕННЫЙ И КОМПАКТНЫЙ РАЗМЕР) ]]
+    -- [[ Главный Интерфейс Меню ]]
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 380, 0, 320) -- Размер значительно уменьшен
+    MainFrame.Size = UDim2.new(0, 380, 0, 320)
     MainFrame.Position = UDim2.new(0.5, -190, 0.5, -160)
     MainFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 28)
     MainFrame.Active = true
@@ -354,7 +381,7 @@ local function InitializeMainScript()
 
     local function CopyLink()
         PlayAnimeSound()
-        setclipboard("https://t.me/stav_fast")
+        setclipboard("https://go.linkify.ru/2ItD")
         local oldText = TgBtn.Text
         TgBtn.Text = "Ссылка скопирована в буфер!"
         task.wait(2)
@@ -363,7 +390,7 @@ local function InitializeMainScript()
     DonateBtn.MouseButton1Click:Connect(CopyLink)
     TgBtn.MouseButton1Click:Connect(CopyLink)
 
-    -- [[ КНОПКА МЕНЮ (КРУГЛЯШОК ИЗ ТВОЕГО СКРИНШОТА) ]]
+    -- [[ КНОПКА МЕНЮ ]]
     local ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
     ToggleBtn.Position = UDim2.new(0, 20, 0, 120) 
@@ -425,7 +452,7 @@ local function InitializeMainScript()
         return #Camera:GetPartsObscuringTarget({targetPart.Position}, ignoreList) > 0
     end
 
-    -- [[ ИСПРАВЛЕННЫЙ СКАНЕР ХП И ОРУЖИЯ ]]
+    -- [[ СКАНЕР ХП И ОРУЖИЯ ]]
     local function GetAdvancedHealthAndWeapon(player, hum)
         local char = player.Character
         if not char then return 0, 100, "" end
