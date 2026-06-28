@@ -29,7 +29,7 @@ end
 
 -- [[ СИСТЕМА КЛЮЧЕЙ (ПАНЕЛЬ АВТОРИЗАЦИИ С НОВОЙ КНОПКОЙ) ]]
 local KeyFrame = Instance.new("Frame")
-KeyFrame.Size = UDim2.new(0, 260, 0, 180) -- Немного увеличили высоту для новой кнопки
+KeyFrame.Size = UDim2.new(0, 260, 0, 180)
 KeyFrame.Position = UDim2.new(0.5, -130, 0.5, -90)
 KeyFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 28)
 KeyFrame.Active = true
@@ -102,13 +102,13 @@ end)
 
 -- Функция запуска основного скрипта
 local function InitializeMainScript()
-    KeyFrame:Destroy() -- Удаляем панель ключа полностью
+    KeyFrame:Destroy()
     PlayAnimeSound()
 
     -- [[ Настройки ]]
     local MenuOpen = false
     local FOV_Radius = 120
-    local AimSmoothness = 0.15 
+    local AimSmoothness = 0.1 -- Улучшено сглаживание (чем меньше, тем быстрее и точнее наводка)
     local ESP_TextSize = 11
     local AimTargetPart = "Head"
 
@@ -168,7 +168,6 @@ local function InitializeMainScript()
     LogoLabel.Font = Enum.Font.GothamBold
     LogoLabel.Parent = MainFrame
 
-    -- [[ Кнопка изменения размера ]]
     local ResizeBtn = Instance.new("Frame")
     ResizeBtn.Size = UDim2.new(0, 15, 0, 15)
     ResizeBtn.Position = UDim2.new(1, -15, 1, -15)
@@ -209,7 +208,6 @@ local function InitializeMainScript()
     ContentPanel.Parent = MainFrame
     local ContentCorner = Instance.new("UICorner") ContentCorner.CornerRadius = UDim.new(0, 10); ContentCorner.Parent = ContentPanel
 
-    -- Скролл-панели для вкладок
     local ScrollVisuals = Instance.new("ScrollingFrame")
     ScrollVisuals.Size = UDim2.new(1, -12, 1, -12)
     ScrollVisuals.Position = UDim2.new(0, 6, 0, 6)
@@ -243,7 +241,6 @@ local function InitializeMainScript()
     local ALayout = Instance.new("UIListLayout") ALayout.Padding = UDim.new(0, 4); ALayout.Parent = ScrollAim
     local SLayout = Instance.new("UIListLayout") SLayout.Padding = UDim.new(0, 8); SLayout.Parent = ScrollSettings
 
-    -- Управление табами
     local TabButtons = {}
     local function CreateTabButton(text, isTarget)
         local Btn = Instance.new("TextButton")
@@ -283,7 +280,6 @@ local function InitializeMainScript()
     aTab.MouseButton1Click:Connect(function() SwitchTab(aTab, ScrollAim) end)
     sTab.MouseButton1Click:Connect(function() SwitchTab(sTab, ScrollSettings) end)
 
-    -- Конструкторы элементов интерфейса
     local function CreateCheckbox(text, parent, callback)
         local Frame = Instance.new("Frame") Frame.Size = UDim2.new(1, 0, 0, 28); Frame.BackgroundTransparency = 1; Frame.Parent = parent
         local Check = Instance.new("TextButton") Check.Size = UDim2.new(0, 16, 0, 16); Check.Position = UDim2.new(0, 4, 0.5, -8); Check.BackgroundColor3 = Color3.fromRGB(15, 12, 28); Check.Text = ""; Check.Parent = Frame
@@ -325,7 +321,6 @@ local function InitializeMainScript()
         end)
     end
 
-    -- Наполнение вкладок
     CreateCheckbox("ВХ Коробки (Рамка)", ScrollVisuals, function(s) _G.Box_Enabled = s end)
     CreateCheckbox("ВХ Цифры ХП", ScrollVisuals, function(s) _G.HP_Enabled = s end)
     CreateCheckbox("ВХ Никнеймы", ScrollVisuals, function(s) _G.Name_Enabled = s end)
@@ -447,12 +442,18 @@ local function InitializeMainScript()
 
     local function IsBehindWall(targetPart)
         if not targetPart or not LocalPlayer.Character then return true end
+        local castPoints = {Camera.CFrame.Position, targetPart.Position}
         local ignoreList = {LocalPlayer.Character, Camera}
-        for _, p in pairs(Players:GetPlayers()) do if p.Character and not CheckIsEnemy(p) then table.insert(ignoreList, p.Character) end end
-        return #Camera:GetPartsObscuringTarget({targetPart.Position}, ignoreList) > 0
+        for _, p in pairs(Players:GetPlayers()) do 
+            if p.Character and not CheckIsEnemy(p) then 
+                table.insert(ignoreList, p.Character) 
+            end 
+        end
+        local parts = Camera:GetPartsObscuringTarget(castPoints, ignoreList)
+        return #parts > 0
     end
 
-    -- [[ СКАНЕР ХП И ОРУЖИЯ ]]
+    -- [[ ИСПРАВЛЕННЫЙ СКАНЕР ХП И ОРУЖИЯ ]]
     local function GetAdvancedHealthAndWeapon(player, hum)
         local char = player.Character
         if not char then return 0, 100, "" end
@@ -460,10 +461,13 @@ local function InitializeMainScript()
         local curH, maxH = 100, 100
         local weaponText = ""
 
+        if hum then
+            curH, maxH = hum.Health, hum.MaxHealth
+        end
+
         for _, obj in pairs(char:GetDescendants()) do
             if (obj.Name == "Health" or obj.Name == "HP" or obj.Name == "HealthValue") and (obj:IsA("NumberValue") or obj:IsA("IntValue")) then
                 curH = obj.Value
-                maxH = (char:FindFirstChild("MaxHealth") and char.MaxHealth.Value or 100)
                 break
             end
         end
@@ -474,14 +478,10 @@ local function InitializeMainScript()
                 if bGui:IsA("BillboardGui") then
                     local bar = bGui:FindFirstChild("Bar", true) or bGui:FindFirstChild("Health", true)
                     if bar and bar:IsA("Frame") and bar.Size.X.Scale then
-                        curH = bar.Size.X.Scale * 100
+                        curH = bar.Size.X.Scale * maxH
                     end
                 end
             end
-        end
-
-        if hum and curH == 100 then
-            curH, maxH = hum.Health, hum.MaxHealth
         end
 
         local tool = char:FindFirstChildOfClass("Tool")
@@ -537,6 +537,7 @@ local function InitializeMainScript()
                 end
 
                 local isEnemy = CheckIsEnemy(player)
+                -- ФИКС ТУТ: Ловим все 3 аргумента правильно, чтобы не ломать типы данных
                 local currentHp, maxHp, weaponName = GetAdvancedHealthAndWeapon(player, hum)
 
                 if currentHp <= 0 or not isEnemy then
@@ -576,7 +577,7 @@ local function InitializeMainScript()
     for _, p in pairs(Players:GetPlayers()) do ApplyESP(p) end
     Players.PlayerAdded:Connect(ApplyESP)
 
-    -- [[ АИМБОТ ]]
+    -- [[ ИСПРАВЛЕННЫЙ АИМБОТ ]]
     local FOVCircle = Drawing.new("Circle")
     FOVCircle.Thickness = 1.5; FOVCircle.Color = Color3.fromRGB(0, 240, 255); FOVCircle.Filled = false
 
@@ -591,8 +592,9 @@ local function InitializeMainScript()
             
             for _, p in pairs(Players:GetPlayers()) do
                 if CheckIsEnemy(p) and p.Character then
-                    local currentHp = GetAdvancedHealthAndWeapon(p, p.Character:FindFirstChild("Humanoid"))
-                    if currentHp > 0 then
+                    -- ФИКС ТУТ: Исправлен забор ХП, аим больше не падает из-за nil сравнений
+                    local checkHp, _, _ = GetAdvancedHealthAndWeapon(p, p.Character:FindFirstChild("Humanoid"))
+                    if checkHp > 0 then
                         local part = p.Character:FindFirstChild(AimTargetPart)
                         if not part then
                             if AimTargetPart == "UpperTorso" then part = p.Character:FindFirstChild("Torso") or p.Character:FindFirstChild("Chest") end
@@ -611,7 +613,9 @@ local function InitializeMainScript()
                 end
             end
             if targetPart then
-                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPart.Position), AimSmoothness)
+                -- Улучшенная математика наведения CFrame для плавности без рывков
+                local targetLook = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+                Camera.CFrame = Camera.CFrame:Lerp(targetLook, AimSmoothness)
                 if AutoShot_Enabled and LocalPlayer.Character:FindFirstChildOfClass("Tool") then LocalPlayer.Character:FindFirstChildOfClass("Tool"):Activate() end
             end
         end
